@@ -251,7 +251,9 @@ function receivedMessage(event) {
     //   sendHelpOptionsAsButtonTemplates(senderID);
     // }
     //sendTextMessage(senderID, message.text);
-    sendTextMessage(senderID, stock_api("TIME_SERIES_INTRADAY", message.text, "5min", ALPHA_TOKEN));
+    stock_price(message.text, ALPHA_TOKEN, function (res) {
+      sendTextMessage(senderID, res);
+    });
 
   }
 }
@@ -431,10 +433,10 @@ function firstEntity(nlp, name) {
   return nlp && nlp.entities && nlp.entities && nlp.entities[name] && nlp.entities[name][0];
 }
 
-function stock_api(type, symbol, interval = '5min', apikey) {
+function stock_api(type, symbol, interval = '5min', apikey, callback) {
   var request_string = `https://www.alphavantage.co/queryy?function=${type}&symbol=${symbol}&interval=${interval}&apikey=${apikey}`;
   console.log(request_string);
-  const data = request.get({
+  request.get({
     url: request_string,
     json: true,
     headers: { 'User-Agent': 'request' }
@@ -444,12 +446,22 @@ function stock_api(type, symbol, interval = '5min', apikey) {
     } else if (res.statusCode !== 200) {
       console.log('Status:', res.statusCode);
     } else {
-      // data is already parsed as JSON:
       console.log(data);
-      return data.stringify;
+      return callback(data);
     }
   });
-  return data;
+}
+
+function stock_price(symbol, apikey, callback) {
+  var type = 'TIME_SERIES_INTRADAY';
+  var interval = '1min';
+  function filter(res) {
+    var data = res['Time Series (1min)']
+    var last_price = data[Object.keys(data)[0]]['4. close']
+    return callback(last_price);
+  }
+  stock_api(type, symbol, interval, apikey, filter);
+
 }
 
 
