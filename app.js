@@ -17,21 +17,14 @@ const
   express = require('express'),
   https = require('https'),
   request = require('request'),
-  Shopify = require('shopify-api-node'),
   mongoose = require('mongoose'),
-  Product = require('./models/products');
+  _ = require('lodash');
 
-
-const _ = require('lodash');
 var app = express();
 app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
-
-
-
-mongoose.connect('mongodb://kayleoss:goodboy114@ds259305.mlab.com:59305/messenger-bot');
 
 /*
  * Open config/default.json and set your config values before running this code. 
@@ -54,35 +47,20 @@ const FB_PAGE_ACCESS_TOKEN = (process.env.FB_PAGE_ACCESS_TOKEN) ?
   (process.env.FB_PAGE_ACCESS_TOKEN) :
   config.get('fb_pageAccessToken');
 
-const SHOPIFY_SHOP_NAME = (process.env.SHOP_NAME) ?
-  process.env.SHOP_NAME :
-  config.get('sh_shopName');
-
-const SHOPIFY_API_KEY = (process.env.SHOP_API_KEY) ?
-  process.env.SHOP_API_KEY :
-  config.get('sh_apiKey');
-
-const SHOPIFY_API_PASSWORD = (process.env.SHOP_API_PASSWORD) ?
-  process.env.SHOP_API_PASSWORD :
-  config.get('sh_apiPassword');
+const ALPHA_TOKEN = (process.env.ALPHA_TOKEN) ?
+  (process.env.ALPHA_TOKEN) :
+  config.get('alpha_vantage_token')
 
 const HOST_URL = (process.env.HOST_URL) ?
   process.env.HOST_URL :
   config.get('host_url');
 
 // make sure that everything has been properly configured
-if (!(FB_APP_SECRET && FB_VALIDATION_TOKEN && FB_PAGE_ACCESS_TOKEN && SHOPIFY_SHOP_NAME && SHOPIFY_API_KEY && SHOPIFY_API_PASSWORD && HOST_URL)) {
+if (!(FB_APP_SECRET && FB_VALIDATION_TOKEN && FB_PAGE_ACCESS_TOKEN && ALPHA_TOKEN && HOST_URL)) {
   console.error("Missing config values");
   process.exit(1);
 }
 
-const shopify = new Shopify({
-  shopName: SHOPIFY_SHOP_NAME,
-  apiKey: SHOPIFY_API_KEY,
-  password: SHOPIFY_API_PASSWORD
-});
-
-const product_tag_keywords = [];
 
 /*
  * Verify that the callback came from Facebook. Using the App Secret from 
@@ -129,28 +107,6 @@ app.get('/webhook', function (req, res) {
   } else {
     console.error("Failed validation. Make sure the validation tokens match.");
     res.sendStatus(403);
-  }
-});
-
-/**
- * serves a static page for the webview
- */
-app.get('/product_description', function (req, res) {
-  var product_id = req.query['id'];
-  if (product_id !== 'null') {
-    // console.log("[app.get] product id:" + product_id);
-    var sh_product = shopify.product.get(product_id);
-    sh_product.then(function (product) {
-      // console.log(product.options[0].values);
-      res.status(200).send(product.body_html);
-    }, function (error) {
-      console.error("Error retrieving product");
-      res.sendStatus(400).send("Error retrieving product");
-    });
-
-  } else {
-    console.error("Product id is required");
-    res.sendStatus(400).send("Product id is required");
   }
 });
 
@@ -202,7 +158,7 @@ app.post('/webhook', function (req, res) {
     });
   }
 });
-
+/*
 //POPULATE DATABASE WITH SHOPIFY JSON FILE 
 // var products_url = 'https://52e82a861b0ca05d7541b01262a0da34:4cf5481969535398711eaba9d3b63ea0@dev-circle-toronto-hackathon.myshopify.com/admin/products.json';
 shopify.product.list().then(
@@ -240,7 +196,9 @@ shopify.product.list().then(
     )
   }
 )
+*/
 
+/*
 const sectionButton = function (title, action, options) {
   var payload = options | {};
   payload = Object.assign(options, { action: action });
@@ -250,7 +208,7 @@ const sectionButton = function (title, action, options) {
     payload: JSON.stringify(payload)
   };
 }
-
+*?
 /*
  * Message Event
  *
@@ -270,7 +228,6 @@ function receivedMessage(event) {
     method: 'GET',
     path: '/v2.6/' + senderID + '?fields=first_name,last_name,profile_pic&access_token=' + FB_PAGE_ACCESS_TOKEN
   };
-  const ShopUrl = "https://52e82a861b0ca05d7541b01262a0da34:4cf5481969535398711eaba9d3b63ea0@dev-circle-toronto-hackathon.myshopify.com/admin/shop.json";
 
   // console.log("[receivedMessage] user (%d) page (%d) timestamp (%d) and message (%s)",
   // senderID, pageID, timeOfMessage, JSON.stringify(message));
@@ -293,149 +250,13 @@ function receivedMessage(event) {
     // if (intent && intent.confidence > 0.8 && intent.value == 'product_get') {
     //   sendHelpOptionsAsButtonTemplates(senderID);
     // }
-    if (intent && intent.confidence > 0.8 && intent.value == 'location_get') {
-      shopify.location.list().then(
-        (location) => {
-          // console.log(location);
-          sendTextMessage(senderID, 'We are at ' + location[0].address1 + " " + location[0].address2 + " " + location[0].city);
-        });
-    }
-    
-    if (intent && intent.confidence > 0.5 && intent.value == 'contact_get') {
-      shopify.shop.get().then(shop => { sendContactAsButton(senderID,shop.phone,shop.email);});
-    }
-    if (intent && intent.confidence > 0.8 && intent.value == 'help_get') {
-      sendHelpOptionsAsButtonTemplates(senderID);
-    }
-
-    const greetings = firstEntity(message.nlp, 'greetings');
-    if (greetings && greetings.confidence > 0.8) {
-      const get_info = request('https://graph.facebook.com/v2.6/' + senderID + '?&access_token=' + FB_PAGE_ACCESS_TOKEN, function (error, response, body) {
-        var data = JSON.parse(body);
-        sendTextMessage(senderID, 'Hey ' + data.first_name + '! :) \n\
-Welcome to CandyBoxx! \nWe offer the best and brightest in fashion!👚👗👙💄💋 \n\
-How can I help you today?');
-      });
-    }
-
-    const product_get = firstEntity(message.nlp, 'product_get');
-    if (intent && intent.confidence > 0.8 && intent.value == 'product_get') {
-      sendTextMessage(senderID, "We have lots of products!");
-      var keys = search_product_key(messageText);
-      if (keys) {
-        Product.find({ 'tags': { $in: keys } }, null, { limit: 5 }, function (err, foundProducts) {
-          if (err) {
-            console.log(err);
-          } else {
-            var templateElements = [];
-            const sendProducts = foundProducts.forEach(function (product) {
-              var url = 'https://dev-circle-toronto-hackathon.myshopify.com/products/' + product.handle;
-              templateElements.push({
-                title: product.title,
-                subtitle: product.tags.toString(),
-                image_url: product.image_src,
-                buttons: [
-                  sectionButton('See options', 'QR_GET_PRODUCT_OPTIONS', { id: product.id }),
-                  {
-                    "type": "web_url",
-                    "url": url,
-                    "title": "View the web Page",
-                  },
-                ]
-              });
-            });
-
-            var messageData = {
-              recipient: {
-                id: senderID
-              },
-              message: {
-                attachment: {
-                  type: "template",
-                  payload: {
-                    template_type: "generic",
-                    elements: templateElements
-                  }
-                }
-              }
-            };
-
-            callSendAPI(messageData);
-
-
-          }
-        });
-      }
-      else {
-        sendHelpOptionsAsButtonTemplates(senderID);
-      }
-    }
+    //sendTextMessage(senderID, message.text);
+    sendTextMessage(senderID, stock_api("TIME_SERIES_INTRADAY", message.text, "5min", ALPHA_TOKEN));
 
   }
-
-  //SHOP API
-
-function sendContactAsButton (recepientID, phoneNumber, email) {
-  // console.log("[sendPhoneNumberAsButton] Sending the help options menu");
-  var messageData = {
-    recipient: {
-      id: recepientID
-    },
-    message: {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "button",
-          text: "Out phone number is " + phoneNumber + " and our email address is " +email +" . Click the button below to call us" ,
-          buttons: [
-            {
-              "type": "phone_number",
-              "title": phoneNumber,
-              "payload": phoneNumber
-            }
-          ]
-        }
-      }
-    }
-
-  };
-
-  callSendAPI(messageData);
-
 }
 
-/*
- * Send a message with buttons.
- *
- */
-function sendHelpOptionsAsButtonTemplates(recipientId) {
-  // console.log("[sendHelpOptionsAsButtonTemplates] Sending the help options menu");
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "button",
-          text: "Click the button before to get a list of 5 of our products.",
-          buttons: [
-            {
-              "type": "postback",
-              "title": "Get 5 products",
-              "payload": JSON.stringify({ action: 'QR_GET_PRODUCT_LIST', limit: 5 })
-            }
-            // limit of three buttons 
-          ]
-        }
-      }
-    }
-  };
-
-  callSendAPI(messageData);
-}
-
+//SHOP API
 /*
  * Someone tapped one of the Quick Reply buttons so 
  * respond with the appropriate content
@@ -462,135 +283,6 @@ function handleQuickReplyResponse(event) {
  * swipe from side to side to see it
  *
  */
-function respondToHelpRequestWithTemplates(recipientId, requestForHelpOnFeature) {
-  // console.log("[respondToHelpRequestWithTemplates] handling help request for %s",
-  // requestForHelpOnFeature);
-  var templateElements = [];
-
-  var requestPayload = JSON.parse(requestForHelpOnFeature);
-
-
-  var textButton = function (title, action, options) {
-    var payload = options | {};
-    payload = Object.assign(options, { action: action });
-    return {
-      "content_type": "text",
-      title: title,
-      payload: JSON.stringify(payload)
-    };
-  }
-
-  switch (requestPayload.action) {
-    case 'QR_GET_PRODUCT_LIST':
-      var products = shopify.product.list({ limit: requestPayload.limit });
-
-
-      products.then(function (listOfProducts) {
-        var prod = JSON.stringify(listOfProducts);
-        var random1 = prod[_.random(0, prod.length)];
-
-        console.log(prod[0]);
-
-        // console.log(prod[0]);
-
-        listOfProducts.forEach((product) => {
-          // console.log(product);
-          var url = HOST_URL + "/product.html?id=" + product.id;
-          var url2 = "https://dev-circle-toronto-hackathon.myshopify.com/products/" + product.handle;
-          // console.log(url2);
-
-          templateElements.push({
-            title: product.title,
-            subtitle: product.tags,
-            image_url: product.image.src,
-            buttons: [
-              {
-                "type": "web_url",
-                "url": url,
-                "title": "Read description",
-                "webview_height_ratio": "compact",
-                "messenger_extensions": "true"
-              },
-              sectionButton('See options', 'QR_GET_PRODUCT_OPTIONS', { id: product.id }),
-              {
-                "type": "web_url",
-                "url": url2,
-                "title": "Go to the web Page",
-              },
-
-
-            ]
-          });
-        });
-
-
-        var messageData = {
-          recipient: {
-            id: recipientId
-          },
-          message: {
-            attachment: {
-              type: "template",
-              payload: {
-                template_type: "generic",
-                elements: templateElements
-              }
-            }
-          }
-        };
-
-        callSendAPI(messageData);
-
-      });
-
-      break;
-
-    case 'QR_GET_PRODUCT_OPTIONS':
-      var sh_product = shopify.product.get(requestPayload.id);
-      sh_product.then(function (product) {
-
-        // console.log(product);
-        var options = '';
-        product.options.map(function (option) {
-          options = options + option.name + ': ' + option.values.join(',') + "\n";
-        });
-        var prices = [];
-        product.variants.forEach((products) => {
-          prices.push(products.price);
-        });
-        if (prices.length > 0) {
-          var price = '';
-          var newPrice = prices.every((val, i, arr) => val == arr[0]);
-          if (newPrice === true) { price = prices[0] } else {
-            price = prices.join(', $') + "\n";
-
-          };
-        }
-
-        var messageData = {
-          recipient: {
-            id: recipientId
-          },
-          message: {
-            text: options.substring(0, 640) + "Price is : $" + price,
-            quick_replies: [
-              textButton('Get 3 more products', 'QR_GET_PRODUCT_LIST', { limit: 3 })
-            ]
-          },
-        };
-        callSendAPI(messageData);
-      });
-
-
-
-      break;
-      break;
-
-
-  }
-
-
-}
 
 /*
  * Delivery Confirmation Event
@@ -609,8 +301,8 @@ function receivedDeliveryConfirmation(event) {
 
   if (messageIDs) {
     messageIDs.forEach(function (messageID) {
-      // console.log("[receivedDeliveryConfirmation] Message with ID %s was delivered",
-      // messageID);
+      console.log("[receivedDeliveryConfirmation] Message with ID %s was delivered",
+        messageID);
     });
   }
 
@@ -633,10 +325,8 @@ function receivedPostback(event) {
   // button for Structured Messages. 
   var payload = event.postback.payload;
 
-  // console.log("[receivedPostback] from user (%d) on page (%d) with payload ('%s') " +
-  //   "at (%d)", senderID, recipientID, payload, timeOfPostback);
-
-  respondToHelpRequestWithTemplates(senderID, payload);
+  console.log("[receivedPostback] from user (%d) on page (%d) with payload ('%s') " +
+    "at (%d)", senderID, recipientID, payload, timeOfPostback);
 }
 
 /*
@@ -675,11 +365,11 @@ function callSendAPI(messageData) {
       var messageId = body.message_id;
 
       if (messageId) {
-        // console.log("[callSendAPI] Successfully sent message with id %s to recipient %s",
-        //   messageId, recipientId);
+        console.log("[callSendAPI] Successfully sent message with id %s to recipient %s",
+          messageId, recipientId);
       } else {
-        // console.log("[callSendAPI] Successfully called Send API for recipient %s",
-        //   recipientId);
+        console.log("[callSendAPI] Successfully called Send API for recipient %s",
+          recipientId);
       }
     } else {
       console.error("[callSendAPI] Send API call failed", response.statusCode, response.statusMessage, body.error);
@@ -731,7 +421,7 @@ function callSendProfile() {
  * certificate authority.
  */
 app.listen(app.get('port'), function () {
-  // console.log('[app.listen] Node app is running on port', app.get('port'));
+  console.log('[app.listen] Node app is running on port', app.get('port'));
   callSendProfile();
 });
 
@@ -741,39 +431,62 @@ function firstEntity(nlp, name) {
   return nlp && nlp.entities && nlp.entities && nlp.entities[name] && nlp.entities[name][0];
 }
 
-function search_product_key(messageText) {
-  var result = []
-  product_tag_keywords.forEach(function (keys) {
-    if (messageText.search(keys) != -1) {
-      result.push(keys);
+function stock_api(type, symbol, interval = '5min', apikey) {
+  var request_string = `https://www.alphavantage.co/queryy?function=${type}&symbol=${symbol}&interval=${interval}&apikey=${apikey}`;
+  console.log(request_string);
+  const data = request.get({
+    url: request_string,
+    json: true,
+    headers: { 'User-Agent': 'request' }
+  }, (err, res, data) => {
+    if (err) {
+      console.log('Error:', err);
+    } else if (res.statusCode !== 200) {
+      console.log('Status:', res.statusCode);
+    } else {
+      // data is already parsed as JSON:
+      console.log(data);
+      return data.stringify;
     }
-  })
-  // console.log(result);
-  return result;
+  });
+  return data;
 }
 
-function find_products(keys) {
-  Product.find({ 'tags': { $all: keys } }, null, { limit: 5 }, function (err, found_complete_Products) {
-    if (!err) {
-      const sendProducts = found_complete_Products.forEach(function (product) {
-        sendTextMessage(senderID, 'https://dev-circle-toronto-hackathon.myshopify.com/products/' + product.handle);
-      });
+
+
+  /*
+    function search_product_key(messageText) {
+      var result = []
+      product_tag_keywords.forEach(function (keys) {
+        if (messageText.search(keys) != -1) {
+          result.push(keys);
+        }
+      })
+      // console.log(result);
+      return result;
     }
-    else {
-      Product.find({ 'tags': { $in: keys } }, null, { limit: 5 }, function (err, found_partial_Products) {
-        console.log(found_partial_Products);
-        if (err) {
-          console.log(err);
-        } else {
-          const sendProducts = found_partial_Products.forEach(function (product) {
+  
+    function find_products(keys) {
+      Product.find({ 'tags': { $all: keys } }, null, { limit: 5 }, function (err, found_complete_Products) {
+        if (!err) {
+          const sendProducts = found_complete_Products.forEach(function (product) {
             sendTextMessage(senderID, 'https://dev-circle-toronto-hackathon.myshopify.com/products/' + product.handle);
           });
-
-          sendTextMessage(senderID, sendProducts);
+        }
+        else {
+          Product.find({ 'tags': { $in: keys } }, null, { limit: 5 }, function (err, found_partial_Products) {
+            console.log(found_partial_Products);
+            if (err) {
+              console.log(err);
+            } else {
+              const sendProducts = found_partial_Products.forEach(function (product) {
+                sendTextMessage(senderID, 'https://dev-circle-toronto-hackathon.myshopify.com/products/' + product.handle);
+              });
+  
+              sendTextMessage(senderID, sendProducts);
+            }
+          });
         }
       });
     }
-  });
-}
-
-}
+  */

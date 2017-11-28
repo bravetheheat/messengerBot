@@ -2,10 +2,9 @@
     "sh_shopName": "dev-circle-toronto-hackathon",
     "host_url": "https://bf620500.ngrok.io", //ngrok URL here
     //FACEBOOK CREDENTIALS
-    "fb_appSecret": "07d3e7a54d8b40ba62e3966e8eeca154",
-    "fb_pageAccessToken": "EAACFAbvTl7wBAJPieDiAG75ZCTXxBt7jZBuS2M1ym0GeTNf35E0Me3OdZAqLks6oYGFX33IWKwowbdzZCKtATFux5Kp3rtHKPUPpI3Lsu878NzvHPV5Rzw891yyZBp5pLyYDoRg6lCqkk1SlJoZBoiziptdTcIWmCbCWApQ9XNwgZDZD",
-    "fb_validationToken": "JaxxedBot",
-    //SHOPIFY CREDENTIALS
-    "sh_apiKey": "52e82a861b0ca05d7541b01262a0da34",
-    "sh_apiPassword": "4cf5481969535398711eaba9d3b63ea0"
+    "fb_appSecret": "abb9df61a368f81c2f20447ba622345f",
+    "fb_pageAccessToken": "EAAB6e0nEuLgBANAAP2mLIMoMtFrRyRQcgL87yWmZCuVTyYZBntXvYlx9Yf1xYHlZBPZAQ4BjtZAEQUvuhglZCOHYEEOupDoYBzW4RmDdT3BZBGUYXDFhjDEuf87gUNyWtUjpGFy0Psfh01AmNzkBPuUFu1tAZARTgnHKsxCACJ8WmgZDZD",
+    "fb_validationToken": "StockBot",
+    //Alpha Vantage API
+    "alpha_vantage_token": "KU11W5Z9QBZCH7DS"
 }
