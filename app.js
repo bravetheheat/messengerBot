@@ -228,7 +228,7 @@ function receivedMessage(event) {
     method: 'GET',
     path: '/v2.6/' + senderID + '?fields=first_name,last_name,profile_pic&access_token=' + FB_PAGE_ACCESS_TOKEN
   };
-
+  console.log(senderID);
   // console.log("[receivedMessage] user (%d) page (%d) timestamp (%d) and message (%s)",
   // senderID, pageID, timeOfMessage, JSON.stringify(message));
 
@@ -251,6 +251,7 @@ function receivedMessage(event) {
     //   sendHelpOptionsAsButtonTemplates(senderID);
     // }
     //sendTextMessage(senderID, message.text);
+    console.log(message.text);
     stock_price(message.text, ALPHA_TOKEN, function (res) {
       sendTextMessage(senderID, res);
     });
