@@ -1,6 +1,5 @@
-TEAM JAXXED ROXX
+StockBot
 
-Team Number: 8
-Team Members: Ravi, Naresh, Katie, David
+Facebook Messenger Bot to pull and reply with stock information and technical indicators.
 
-Nothing is faked! Everything is pure bot awesomeness.
+Credits to Team Jaxxed for base: Ravi, Naresh, and Katie
