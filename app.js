@@ -133,7 +133,7 @@ app.post('/webhook', function (req, res) {
       var timeOfEvent = pageEntry.time;
 
       // iterate over each messaging event
-      pageEntry.messaging.forEach((messagingEvent) => {
+      pageEntry.messaging.forEach(function (messagingEvent) {
 
         let propertyNames = [];
         for (var prop in messagingEvent) { propertyNames.push(prop) }
@@ -217,8 +217,8 @@ const sectionButton = function (title, action, options) {
  * Read more at https://developers.facebook.com/docs/messenger-platform/webhook-reference/message-received
  * 
  */
-function receivedMessage(event) {
-  // console.log(event)
+async function receivedMessage(event) {
+  console.log(event);
   var senderID = event.sender.id;
   var pageID = event.recipient.id;
   var timeOfMessage = event.timestamp;
@@ -242,8 +242,9 @@ function receivedMessage(event) {
   }
 
   var messageText = message.text;
+  var isEcho = message.is_echo;
 
-  if (messageText) {
+  if (messageText && !isEcho) {
 
     var intent = firstEntity(message.nlp, 'intent');
 
@@ -253,6 +254,7 @@ function receivedMessage(event) {
     //sendTextMessage(senderID, message.text);
     console.log(message.text);
     stock_price(message.text, ALPHA_TOKEN, function (res) {
+      console.log(res);
       sendTextMessage(senderID, res);
     });
 
@@ -447,7 +449,7 @@ function stock_api(type, symbol, interval = '5min', apikey, callback) {
     } else if (res.statusCode !== 200) {
       console.log('Status:', res.statusCode);
     } else {
-      console.log(data);
+      //console.log(data);
       return callback(data);
     }
   });
