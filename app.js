@@ -18,6 +18,7 @@ const
   https = require('https'),
   request = require('request'),
   mongoose = require('mongoose'),
+  cheerio = require('cheerio'),
   _ = require('lodash');
 
 var app = express();
@@ -464,44 +465,20 @@ function stock_price(symbol, apikey, callback) {
     return callback(last_price);
   }
   stock_api(type, symbol, interval, apikey, filter);
+  tmx_money(symbol, callback);
 
 }
 
 
+function tmx_money(symbol, callback) {
+  var url = `https://web.tmxmoney.com/quote.php?qm_symbol=${symbol}`;
+  request.get(url, function (err, response, html) {
+    if (!err) {
+      var page = cheerio.load(html);
+      var price = page('.quote-price').text();
+      console.log(price);
+      callback(price);
+    }
 
-  /*
-    function search_product_key(messageText) {
-      var result = []
-      product_tag_keywords.forEach(function (keys) {
-        if (messageText.search(keys) != -1) {
-          result.push(keys);
-        }
-      })
-      // console.log(result);
-      return result;
-    }
-  
-    function find_products(keys) {
-      Product.find({ 'tags': { $all: keys } }, null, { limit: 5 }, function (err, found_complete_Products) {
-        if (!err) {
-          const sendProducts = found_complete_Products.forEach(function (product) {
-            sendTextMessage(senderID, 'https://dev-circle-toronto-hackathon.myshopify.com/products/' + product.handle);
-          });
-        }
-        else {
-          Product.find({ 'tags': { $in: keys } }, null, { limit: 5 }, function (err, found_partial_Products) {
-            console.log(found_partial_Products);
-            if (err) {
-              console.log(err);
-            } else {
-              const sendProducts = found_partial_Products.forEach(function (product) {
-                sendTextMessage(senderID, 'https://dev-circle-toronto-hackathon.myshopify.com/products/' + product.handle);
-              });
-  
-              sendTextMessage(senderID, sendProducts);
-            }
-          });
-        }
-      });
-    }
-  */
+  });
+}
